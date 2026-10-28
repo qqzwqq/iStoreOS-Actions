@@ -35,13 +35,22 @@
 
 | 插件                     | 状态 | 插件                     | 状态   | 插件                       | 状态   |
 |:------------------------:|:-----:|:------------------------:|:-----:|:---------------------------:|:------:|
-| luci-app-ramfree         | ✅   | luci-app-amlogic         | ✅    | luci-app-filebrowser-go    | ⏳     |
-| luci-app-adguardhome     | ⏳    | luci-app-lucky           |  ⏳   | luci-app-openlist2         | ⏳     |
-| 其他                     | ⏳    |                          |       |                            |        |
+| luci-app-ramfree         | ✅   | luci-app-amlogic         | ✅    | luci-app-adguardhome       | 🧪     |
+| luci-app-openclash       | 🧪   | luci-app-mt5700          | 🧪    | luci-app-fan-h69k          | 🧪     |
+| Docker / Dockerman       | ✅   | luci-app-lucky           | ⏳    | luci-app-openlist2         | ⏳     |
+
+🧪 已加入 St1 自动集成流程，需重新构建并在 H69K 实机验证。
 
 ✅ 支持 - ⏳ 计划中 - ⭕ 不支持
 
 </div>
+
+### H69K 额外集成说明
+
+- St1 自动下载 OpenClash 官方 APK 与 MT5700 的 `aarch64_generic` APK/中文语言包。
+- AdGuardHome 守护程序与 LuCI 管理界面从 iStoreOS 25.12 配套软件源选取。
+- H69K 专用风扇界面通过 `FILES` 覆盖层集成，不安装其他设备的风扇内核模块；实际控制仍取决于 H69K 内核是否提供 `pwm-fan/hwmon` 节点。
+- OpenClash 核心文件需要在首次启动后通过插件界面下载/更新；本流程集成的是 LuCI 插件 APK。
 
 ## 😊 支持设备 [![](https://img.shields.io/badge/-支持设备-FFFFFF.svg)](#-支持设备-)
 | 芯片     | 设备 |
