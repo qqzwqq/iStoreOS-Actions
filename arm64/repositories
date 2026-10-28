@@ -1,14 +1,13 @@
-## Remote package repositories
-#src/gz openwrt_core https://downloads.openwrt.org/releases/25.12.5/targets/armsr/armv8/packages
-#src/gz openwrt_base https://downloads.openwrt.org/releases/25.12.5/packages/aarch64_generic/base
-#src/gz openwrt_kmods https://downloads.openwrt.org/releases/25.12.5/targets/armsr/armv8/kmods/6.12.94-1-ba5ca7f3e73618aeece9cc1c14e512c2
-#src/gz openwrt_luci https://downloads.openwrt.org/releases/25.12.5/packages/aarch64_generic/luci
-#src/gz openwrt_packages https://downloads.openwrt.org/releases/25.12.5/packages/aarch64_generic/packages
-#src/gz openwrt_routing https://downloads.openwrt.org/releases/25.12.5/packages/aarch64_generic/routing
-#src/gz openwrt_telephony https://downloads.openwrt.org/releases/25.12.5/packages/aarch64_generic/telephony
+# OpenWrt 25.12 APK repository list.
+# APK repositories use one URL per line; the old opkg "src/gz NAME URL" syntax is invalid here.
+https://downloads.openwrt.org/releases/25.12.5/targets/armsr/armv8/packages
+https://downloads.openwrt.org/releases/25.12.5/packages/aarch64_generic/base
+https://downloads.openwrt.org/releases/25.12.5/targets/armsr/armv8/kmods/6.12.94-1-ba5ca7f3e73618aeece9cc1c14e512c2
+https://downloads.openwrt.org/releases/25.12.5/packages/aarch64_generic/luci
+https://downloads.openwrt.org/releases/25.12.5/packages/aarch64_generic/packages
+https://downloads.openwrt.org/releases/25.12.5/packages/aarch64_generic/routing
+https://downloads.openwrt.org/releases/25.12.5/packages/aarch64_generic/telephony
 
-
-## This is the local package repository, do not remove!
-src imagebuilder file:packages
-# Custom APKs from upstream GitHub Releases are unsigned/untrusted; download URLs are HTTPS.
-#option check_signature
+# Local APK repository populated by shell/download-third-party-apks.sh.
+file:packages
+# Third-party APKs are downloaded over HTTPS; signature verification remains disabled for these local packages.
