@@ -9,8 +9,8 @@ FAN_COMMIT="8910dc75db7169157565eb6556ba4b33d6489377"
 
 mkdir -p "$PACKAGES_DIR" "$FILES_DIR" "$WORK_DIR"
 
-# 与仓库 arm64/repositories 中固定的 OpenWrt 25.12.5 软件源保持一致。
-BASE_FEED="https://downloads.openwrt.org/releases/25.12.5/packages/aarch64_generic/base"
+# AdGuardHome 位于 packages feed；LuCI 插件位于 luci feed。
+BASE_FEED="https://downloads.openwrt.org/releases/25.12.5/packages/aarch64_generic/packages"
 LUCI_FEED="https://downloads.openwrt.org/releases/25.12.5/packages/aarch64_generic/luci"
 
 download_feed_apk() {
@@ -94,4 +94,4 @@ echo "已复制 H69K 风扇应用文件到 ImageBuilder FILES 覆盖层。"
 echo "注意：风扇控制依赖 H69K 内核本身提供 pwm-fan/hwmon 节点；本脚本不会安装其他设备的 kmod，以避免内核 ABI 不匹配。"
 
 echo "===== 第三方 APK 清单 ====="
-find "$PACKAGES_DIR" -maxdepth 1 -type f \( -name '*openclash*.apk' -o -name '*mt5700*.apk' -o -name '*adguardhome*.apk' \) -printf '%f (%s bytes)\n' | sort
+find "$PACKAGES_DIR" -maxdepth 1 -type f \( -name '*openclash*.apk' -o -name '*mt5700*.apk' -o -name '*adguardhome*.apk' \) -printf '%f (%s bytes)\\n' | sort
