@@ -69,7 +69,27 @@ cp -a "$FAN_SRC/." "$FILES_DIR/"
 }
 chmod +x "$FILES_DIR/etc/init.d/hinlinkfaninit"
 chmod +x "$FILES_DIR/usr/sbin/hinlinkfan-daemon"
-find "$FILES_DIR/etc/uci-defaults" -maxdepth 1 -type f \( -name '*hinlinkfan*' -o -name 'luci-app-fan-h69k' \) -exec chmod +x {} \; 2>/dev/null || true
+
+# St1 produces a shared generic rootfs for multiple boards. Only initialize
+# and enable this H69K-specific fan controller when the actual board matches.
+guard_fan_defaults() {
+  local file="$1"
+  local tmp="$file.tmp"
+  {
+    head -n 1 "$file"
+    cat <<'GUARD'
+# H69K-only guard: this generic rootfs is also used by other board profiles.
+if [ ! -r /proc/device-tree/compatible ] || ! tr '\\000' '\\n' < /proc/device-tree/compatible | grep -qx 'hinlink,opc-h69k'; then
+  exit 0
+fi
+GUARD
+    tail -n +2 "$file"
+  } > "$tmp"
+  mv "$tmp" "$file"
+  chmod +x "$file"
+}
+guard_fan_defaults "$FILES_DIR/etc/uci-defaults/89-hinlinkfan-migrate"
+guard_fan_defaults "$FILES_DIR/etc/uci-defaults/luci-app-fan-h69k"
 echo "已复制 H69K 风扇应用文件到 ImageBuilder FILES 覆盖层。"
 echo "注意：风扇控制依赖 H69K 内核本身提供 pwm-fan/hwmon 节点；本脚本不会安装其他设备的 kmod，以避免内核 ABI 不匹配。"
 
