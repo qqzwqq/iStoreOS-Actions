@@ -156,5 +156,6 @@ jobs:
           🌐 IP： ${{ inputs.network_settings == 'static' && inputs.ipaddr || '单网口-动态获取（从上级路由找寻）；多网口-IP：192.168.100.1' }}
         files: |
           imagebuilder/bin/targets/armsr/armv8/*generic-rootfs.tar.gz
+        overwrite_files: true
       env:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
