@@ -1,6 +1,11 @@
 #!/bin/bash
-# ============= iStoreOS 24.10 仓库外的第三方插件==============
-# ============= 若启用 则打开注释 ============================
+# ============= iStoreOS 25.12 / APK 额外插件配置 ==============
+# 本项目 H69K 固件默认集成：
+# - Docker / Dockerman（build24.sh 官方集成列表）
+# - AdGuardHome + LuCI（build24.sh 官方软件源）
+# - OpenClash + MT5700（St1 自动下载 APK）
+# - luci-app-fan-h69k（St1 以 FILES 覆盖层集成，避免安装不匹配的 kmod）
+# 下面保留其他可选插件示例；请确认它们有 25.12 兼容 APK 后再启用。
 
 # 分区扩容 by sirpdboy 
 #CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-app-partexp"
