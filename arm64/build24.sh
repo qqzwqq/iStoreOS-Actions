@@ -1059,6 +1059,7 @@ PACKAGES="$PACKAGES zram-swap"
 # AdGuardHome 使用 25.12 官方仓库中的 APK 包，ImageBuilder 自动解析依赖。
 PACKAGES="$PACKAGES adguardhome"
 PACKAGES="$PACKAGES luci-app-adguardhome"
+PACKAGES="$PACKAGES luci-i18n-adguardhome-zh-cn"
 
 # OpenClash、MT5700 APK 由 St1 workflow 下载到 imagebuilder/packages/。
 # ImageBuilder 会重建本地 APK 索引并自动解析可用依赖。
