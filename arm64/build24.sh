@@ -1054,6 +1054,18 @@ PACKAGES="$PACKAGES xz-utils"
 PACKAGES="$PACKAGES zlib"
 PACKAGES="$PACKAGES zram-swap"
 
+# ===== 用户指定的常用服务（iStoreOS 25.12 / APK）=====
+# Docker / Dockerman 已在上方官方集成列表中。
+# AdGuardHome 使用 25.12 官方仓库中的 APK 包，ImageBuilder 自动解析依赖。
+PACKAGES="$PACKAGES adguardhome"
+PACKAGES="$PACKAGES luci-app-adguardhome"
+
+# OpenClash、MT5700 APK 由 St1 workflow 下载到 imagebuilder/packages/。
+# ImageBuilder 会重建本地 APK 索引并自动解析可用依赖。
+PACKAGES="$PACKAGES luci-app-openclash"
+PACKAGES="$PACKAGES luci-app-mt5700"
+PACKAGES="$PACKAGES luci-i18n-mt5700-zh-cn"
+
 # 固件构建必要
 PACKAGES="$PACKAGES -libustream-mbedtls perlbase-time"
 
