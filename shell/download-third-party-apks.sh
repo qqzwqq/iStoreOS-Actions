@@ -18,7 +18,7 @@ download_feed_apk() {
   local prefix="$2"
   local listing filename
   listing="$(curl -fsSL --retry 3 --retry-delay 2 "$feed/")"
-  filename="$(printf '%s' "$listing" | grep -oE "${prefix}[[:alnum:]_.~+-]+[.]apk" | LC_ALL=C sort -V | tail -n 1)"
+  filename="$(printf '%s' "$listing" | grep -oE "${prefix}[[:alnum:]_.~+-]+[.]apk" | LC_ALL=C sort -V | tail -n 1 || true)"
   if [ -z "$filename" ]; then
     echo "::error::在官方软件源中找不到 APK：$prefix ($feed)"
     return 1
