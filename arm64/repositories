@@ -10,4 +10,5 @@
 
 ## This is the local package repository, do not remove!
 src imagebuilder file:packages
-option check_signature
+# Custom APKs from upstream GitHub Releases are unsigned/untrusted; download URLs are HTTPS.
+#option check_signature
