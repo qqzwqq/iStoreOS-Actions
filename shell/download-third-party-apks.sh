@@ -31,7 +31,6 @@ download_feed_apk() {
 echo "===== 下载 AdGuardHome 官方 APK ====="
 download_feed_apk "$BASE_FEED" "adguardhome-"
 download_feed_apk "$LUCI_FEED" "luci-app-adguardhome-"
-download_feed_apk "$LUCI_FEED" "luci-i18n-adguardhome-zh-cn-"
 
 echo "===== 下载 OpenClash APK（取官方最新 Release）====="
 OPENCLASH_JSON="$(curl -fsSL --retry 3 --retry-delay 2 https://api.github.com/repos/vernesong/OpenClash/releases/latest)"
