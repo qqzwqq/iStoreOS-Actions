@@ -46,6 +46,10 @@ MT_APP_URL="$(printf '%s' "$MT_JSON" | jq -er '[.assets[] | select(.name | test(
 MT_LANG_URL="$(printf '%s' "$MT_JSON" | jq -er '[.assets[] | select(.name | test("^aarch64_generic-luci-i18n-mt5700-zh-cn-.*\\.apk$"))][0].browser_download_url')"
 for url in "$MT_APP_URL" "$MT_LANG_URL"; do
   name="$(basename "$url")"
+  # Release asset names carry an architecture prefix, but APK's local package
+  # index resolves package archive names without that prefix. Normalize the
+  # on-disk filename so apk can find the package referenced by its index.
+  name="${name#aarch64_generic-}"
   curl -fL --retry 3 --retry-delay 2 "$url" -o "$PACKAGES_DIR/$name"
   test -s "$PACKAGES_DIR/$name"
   echo "已下载：$name"
