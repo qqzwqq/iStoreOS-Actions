@@ -70,7 +70,7 @@ jobs:
     - name: ⏬ 安装依赖
       run: |
         sudo apt-get update
-        sudo apt-get install -y build-essential libncurses5-dev zstd curl unzip tree
+        sudo apt-get install -y build-essential libncurses5-dev zstd curl unzip tree jq
 
     - name: ⏬ 下载 ImageBuilder
       run: |
@@ -103,6 +103,14 @@ jobs:
         sed -i "s|CONFIG_TARGET_IMAGES_GZIP=.*|# CONFIG_TARGET_IMAGES_GZIP is not set|g" .config
         echo "打印action目录结构"
         tree -L 1
+
+    - name: 🧩 下载第三方 APK 并集成 H69K 风扇界面
+      run: |
+        bash shell/download-third-party-apks.sh imagebuilder
+        echo "检查已下载 APK 与 H69K 风扇覆盖文件"
+        find imagebuilder/packages -maxdepth 1 -type f \\( -name '*openclash*.apk' -o -name '*mt5700*.apk' \\) -printf '%f %s bytes\\n' | sort
+        test -x imagebuilder/files/etc/init.d/hinlinkfaninit
+        test -f imagebuilder/files/usr/sbin/hinlinkfan-daemon
 
     - name: 🧱 构建 iStoreOS-rootfs
       working-directory: ./imagebuilder
