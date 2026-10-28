@@ -48,7 +48,7 @@
 ### H69K 额外集成说明
 
 - St1 自动下载 OpenClash 官方 APK 与 MT5700 的 `aarch64_generic` APK/中文语言包。
-- AdGuardHome 守护程序与 LuCI 管理界面从 iStoreOS 25.12 配套软件源选取。
+- AdGuardHome 守护程序与 LuCI 管理界面从 OpenWrt 25.12.5 的 `aarch64_generic` 官方软件源下载并放入本地 APK 源。
 - H69K 专用风扇界面通过 `FILES` 覆盖层集成，不安装其他设备的风扇内核模块；实际控制仍取决于 H69K 内核是否提供 `pwm-fan/hwmon` 节点。
 - OpenClash 核心文件需要在首次启动后通过插件界面下载/更新；本流程集成的是 LuCI 插件 APK。
 - 为兼容上游 GitHub Release 发布的未受本地密钥信任的 APK，ImageBuilder 本地构建关闭了 APK 签名校验；第三方包仅从上述项目的 HTTPS 官方 Release 地址下载。
