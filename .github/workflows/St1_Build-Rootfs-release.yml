@@ -108,7 +108,7 @@ jobs:
       run: |
         bash shell/download-third-party-apks.sh imagebuilder
         echo "检查已下载 APK 与 H69K 风扇覆盖文件"
-        find imagebuilder/packages -maxdepth 1 -type f \\( -name '*openclash*.apk' -o -name '*mt5700*.apk' \\) -printf '%f %s bytes\\n' | sort
+        find imagebuilder/packages -maxdepth 1 -type f \( -name '*openclash*.apk' -o -name '*mt5700*.apk' \) -printf '%f %s bytes\n' | sort
         test -x imagebuilder/files/etc/init.d/hinlinkfaninit
         test -f imagebuilder/files/usr/sbin/hinlinkfan-daemon
 
