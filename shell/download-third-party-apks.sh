@@ -46,7 +46,7 @@ cp -a "$FAN_SRC/." "$FILES_DIR/"
 }
 chmod +x "$FILES_DIR/etc/init.d/hinlinkfaninit"
 chmod +x "$FILES_DIR/usr/sbin/hinlinkfan-daemon"
-find "$FILES_DIR/etc/uci-defaults" -maxdepth 1 -type f \\( -name '*hinlinkfan*' -o -name 'luci-app-fan-h69k' \\) -exec chmod +x {} \; 2>/dev/null || true
+find "$FILES_DIR/etc/uci-defaults" -maxdepth 1 -type f \( -name '*hinlinkfan*' -o -name 'luci-app-fan-h69k' \) -exec chmod +x {} \; 2>/dev/null || true
 echo "已复制 H69K 风扇应用文件到 ImageBuilder FILES 覆盖层。"
 echo "注意：风扇控制依赖 H69K 内核本身提供 pwm-fan/hwmon 节点；本脚本不会安装其他设备的 kmod，以避免内核 ABI 不匹配。"
 
