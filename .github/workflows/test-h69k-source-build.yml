@@ -1,0 +1,360 @@
+name: Test Build H69K iStoreOS 24.10 (from iStoreOS-Actions)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  TZ: Asia/Shanghai
+  REPO_BRANCH: istoreos-24.10
+  CCACHE_DIR: ${{ github.workspace }}/.ccache
+  CARGO_HOME: ${{ github.workspace }}/.cargo-home
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 360
+
+    steps:
+      # 1. 获取自定义仓库
+      - name: Checkout customization repository
+        uses: actions/checkout@v4
+
+      # 1b. 从 H69K-iStoreOS 获取设备配置、插件准备脚本和风扇插件源码包
+      - name: Checkout H69K build customization
+        uses: actions/checkout@v4
+        with:
+          repository: qqzwqq/H69K-iStoreOS
+          ref: main
+          path: h69k-custom
+
+      # 2. 清理环境并释放磁盘空间
+      - name: Cleanup build environment
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /usr/local/lib/android
+          sudo rm -rf /opt/ghc
+          df -h
+
+      # 3. 安装编译依赖及 ccache
+      - name: Install build dependencies
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential clang flex bison g++ gawk \
+            gcc-multilib g++-multilib gettext git \
+            libncurses-dev libssl-dev python3 \
+            python3-distutils rsync unzip zlib1g-dev \
+            file wget curl cpio perl time \
+            device-tree-compiler libelf-dev \
+            python3-pip python3-venv swig \
+            pkg-config ccache
+
+          python3 -m pip install --user pyelftools
+
+          ccache --version
+          ccache -M 5G
+          mkdir -p "$CCACHE_DIR" "$CARGO_HOME"
+
+      # 4. 安装 Rust 与 ARM64 musl 标准库
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-unknown-linux-musl
+
+      - name: Verify Rust toolchain
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          rustc --version
+          cargo --version
+          rustup target list --installed \
+            | grep -qx 'aarch64-unknown-linux-musl'
+
+      # 5. 获取官方 iStoreOS 24.10 源码
+      - name: Clone official iStoreOS 24.10 source
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          git clone --depth=1 \
+            --branch "$REPO_BRANCH" \
+            https://github.com/istoreos/istoreos.git \
+            openwrt
+
+          git -C openwrt log -1 --oneline
+
+      # 6. 恢复 OpenWrt 下载缓存
+      - name: Restore OpenWrt download cache
+        uses: actions/cache@v4
+        with:
+          path: openwrt/dl
+          key: openwrt-dl-${{ runner.os }}-${{ env.REPO_BRANCH }}-${{ github.run_id }}
+          restore-keys: |
+            openwrt-dl-${{ runner.os }}-${{ env.REPO_BRANCH }}-
+            openwrt-dl-${{ runner.os }}-
+
+      # 7. 恢复 ccache 编译缓存
+      - name: Restore ccache
+        uses: actions/cache@v4
+        with:
+          path: .ccache
+          key: ccache-${{ runner.os }}-${{ env.REPO_BRANCH }}-${{ github.run_id }}
+          restore-keys: |
+            ccache-${{ runner.os }}-${{ env.REPO_BRANCH }}-
+            ccache-${{ runner.os }}-
+
+      # 8. 更新并安装官方 feeds
+      - name: Update and install feeds
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          cd openwrt
+          ./scripts/feeds update -a
+          ./scripts/feeds install -a
+
+      # 9. 准备自定义软件包
+      - name: Prepare H69K custom packages
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          cd openwrt
+
+          SCRIPT="$GITHUB_WORKSPACE/h69k-custom/scripts/prepare-h69k-24.10.sh"
+
+          if [ ! -s "$SCRIPT" ]; then
+            echo "::error::找不到自定义软件包准备脚本：$SCRIPT"
+            exit 1
+          fi
+
+          chmod +x "$SCRIPT"
+          # 该脚本约定 ZIP 位于 GITHUB_WORKSPACE 根目录；从配置仓库复制过来
+          cp "$GITHUB_WORKSPACE/h69k-custom/luci-app-fan-h69k-build-source-1.3-25.zip" "$GITHUB_WORKSPACE/"
+          "$SCRIPT"
+
+      # 10. 添加 OpenClash
+      - name: Add OpenClash
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          cd openwrt
+
+          rm -rf /tmp/OpenClash package/luci-app-openclash
+
+          git clone --depth=1 \
+            --branch master \
+            https://github.com/vernesong/OpenClash.git \
+            /tmp/OpenClash
+
+          test -s /tmp/OpenClash/luci-app-openclash/Makefile
+
+          mkdir -p package/luci-app-openclash
+          cp -a /tmp/OpenClash/luci-app-openclash/. \
+            package/luci-app-openclash/
+
+          echo "OpenClash source check passed."
+
+      # 11. 添加 MT5700
+      - name: Add MT5700 package
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          cd openwrt
+
+          rm -rf package/luci-app-mt5700
+
+          git clone --depth=1 \
+            --branch main \
+            https://github.com/qqzwqq/luci-app-mt5700.git \
+            package/luci-app-mt5700
+
+          test -s package/luci-app-mt5700/Makefile
+          test -s package/luci-app-mt5700/src/Makefile
+          test -s package/luci-app-mt5700/src/rust/Cargo.toml
+
+          echo "MT5700 source check passed."
+          grep -E '^(PKG_NAME|PKG_VERSION|PKG_RELEASE)[[:space:]]*[:?+]?=' \
+            package/luci-app-mt5700/Makefile || true
+
+      # 12. 恢复 Rust Cargo 缓存
+      - name: Restore Rust Cargo cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            .cargo-home/registry
+            .cargo-home/git
+            openwrt/package/luci-app-mt5700/src/rust/target
+          key: cargo-${{ runner.os }}-${{ env.REPO_BRANCH }}-${{ hashFiles('openwrt/package/luci-app-mt5700/src/rust/Cargo.toml', 'openwrt/package/luci-app-mt5700/src/rust/Cargo.lock') }}-${{ github.run_id }}
+          restore-keys: |
+            cargo-${{ runner.os }}-${{ env.REPO_BRANCH }}-${{ hashFiles('openwrt/package/luci-app-mt5700/src/rust/Cargo.toml', 'openwrt/package/luci-app-mt5700/src/rust/Cargo.lock') }}-
+            cargo-${{ runner.os }}-${{ env.REPO_BRANCH }}-
+
+      # 13. 加载 H69K 配置
+      - name: Generate H69K configuration
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          cd openwrt
+
+          CONFIG_FILE="$GITHUB_WORKSPACE/h69k-custom/rk35xx/h69k-24.10.config"
+
+          if [ ! -s "$CONFIG_FILE" ]; then
+            echo "::error::H69K 配置文件不存在或为空：$CONFIG_FILE"
+            exit 1
+          fi
+
+          cp "$CONFIG_FILE" .config
+
+          cat >> .config <<'EOF'
+
+          CONFIG_PACKAGE_luci-app-mt5700=y
+          CONFIG_PACKAGE_luci-i18n-mt5700-zh-cn=y
+          CONFIG_CCACHE=y
+          CONFIG_TARGET_KERNEL_PARTSIZE=64
+          CONFIG_TARGET_ROOTFS_PARTSIZE=1024
+          EOF
+
+          echo "H69K configuration loaded."
+
+          grep -E \
+            'CONFIG_TARGET_(rockchip|rockchip_armv8|DEVICE_rockchip_armv8_DEVICE_hinlink_opc-h6xk)=y|CONFIG_PACKAGE_(luci-app-mt5700|luci-i18n-mt5700-zh-cn|luci-app-openclash|luci-app-fan-h69k|docker|dockerd|adguardhome|luci-app-adguardhome)=y|CONFIG_CCACHE=y' \
+            .config || true
+
+      # 14. 整理并验证最终配置
+      - name: Resolve and verify configuration
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          cd openwrt
+
+          echo "===== 1. 整理配置 ====="
+          make defconfig
+
+          echo "===== 验证内核分区大小 ====="
+          grep '^CONFIG_TARGET_KERNEL_PARTSIZE=' .config
+
+          if ! grep -qx 'CONFIG_TARGET_KERNEL_PARTSIZE=64' .config; then
+          echo "::error::CONFIG_TARGET_KERNEL_PARTSIZE 未生效为 64"
+          exit 1
+          fi
+
+          echo "内核分区大小验证通过：64 MiB"
+
+          echo "===== 2. 检查 dnsmasq 配置 ====="
+          grep -E \
+            '^(CONFIG_PACKAGE_dnsmasq(-full)?=y|# CONFIG_PACKAGE_dnsmasq(-full)? is not set)$' \
+            .config || true
+
+          if grep -qx 'CONFIG_PACKAGE_dnsmasq-full=y' .config; then
+            if grep -qx 'CONFIG_PACKAGE_dnsmasq=y' .config; then
+              sed -i '/^CONFIG_PACKAGE_dnsmasq=y$/d' .config
+              echo '# CONFIG_PACKAGE_dnsmasq is not set' >> .config
+              make defconfig
+            fi
+          fi
+
+          if grep -qx 'CONFIG_PACKAGE_dnsmasq=y' .config &&
+             grep -qx 'CONFIG_PACKAGE_dnsmasq-full=y' .config; then
+            echo "::error::dnsmasq 与 dnsmasq-full 同时启用"
+            exit 1
+          fi
+
+          echo "===== 验证根文件系统分区大小 ====="
+          grep '^CONFIG_TARGET_ROOTFS_PARTSIZE=' .config || true
+          if ! grep -qx 'CONFIG_TARGET_ROOTFS_PARTSIZE=1024' .config; then
+            echo "::error::CONFIG_TARGET_ROOTFS_PARTSIZE 未生效为 1024，请检查 iStoreOS 配置项"
+            exit 1
+          fi
+
+          echo "根文件系统分区大小验证通过：1024 MiB（约 1 GiB）"
+
+          check_config() {
+            local key="$1"
+            if ! grep -qxF "${key}=y" .config; then
+              echo "::error::缺少必要配置：${key}=y"
+              exit 1
+            fi
+          }
+
+          echo "===== 3. 验证 H69K 目标 ====="
+          check_config CONFIG_TARGET_rockchip
+          check_config CONFIG_TARGET_rockchip_armv8
+          check_config CONFIG_TARGET_DEVICE_rockchip_armv8_DEVICE_hinlink_opc-h6xk
+
+          echo "===== 4. 验证自定义软件包 ====="
+          check_config CONFIG_PACKAGE_luci-app-fan-h69k
+          check_config CONFIG_PACKAGE_luci-app-openclash
+          check_config CONFIG_PACKAGE_luci-app-mt5700
+
+          echo "===== 5. 验证 ccache 配置 ====="
+          if grep -qx 'CONFIG_CCACHE=y' .config; then
+            echo "CONFIG_CCACHE=y"
+          else
+            echo "::warning::CONFIG_CCACHE 未保留在最终配置中"
+          fi
+
+          echo "===== 6. 最终 DNS 配置 ====="
+          grep -E \
+            '^(CONFIG_PACKAGE_dnsmasq(-full)?=y|# CONFIG_PACKAGE_dnsmasq(-full)? is not set)$' \
+            .config || true
+
+          echo "===== H69K 配置检查完成 ====="
+
+      # 15. 下载并编译，保存完整日志
+      - name: Compile H69K firmware
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          cd openwrt
+
+          LOG="$GITHUB_WORKSPACE/build.log"
+          touch "$LOG"
+
+          export CARGO_HOME="$GITHUB_WORKSPACE/.cargo-home"
+          export CCACHE_DIR="$GITHUB_WORKSPACE/.ccache"
+
+          export CARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL_LINKER=aarch64-openwrt-linux-musl-gcc
+          export CC_aarch64_unknown_linux_musl=aarch64-openwrt-linux-musl-gcc
+          export AR_aarch64_unknown_linux_musl=aarch64-openwrt-linux-musl-ar
+
+          echo "===== ccache status before build ====="
+          ccache -s | tee -a "$LOG"
+          ccache -z
+
+          echo "===== Downloading sources ====="
+          make download -j2 2>&1 | tee -a "$LOG"
+
+          echo "===== Starting firmware compilation ====="
+          make -j2 V=s 2>&1 | tee -a "$LOG"
+
+          echo "===== ccache status after build ====="
+          ccache -s | tee -a "$LOG"
+
+          echo "===== Build completed ====="
+
+      # 16. 无论成功失败，都上传构建日志
+      - name: Upload build log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: H69K-iStoreOS-24.10-build-log
+          path: build.log
+          if-no-files-found: warn
+          retention-days: 7
+
+      # 17. 上传固件
+      - name: Upload firmware artifacts
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: H69K-iStoreOS-24.10-Firmware
+          path: |
+            openwrt/bin/targets/rockchip/armv8/*
+            !openwrt/bin/targets/rockchip/armv8/packages/
+          if-no-files-found: error
+          retention-days: 14
